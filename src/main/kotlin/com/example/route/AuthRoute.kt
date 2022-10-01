@@ -19,6 +19,7 @@ fun Application.configureAuthRouting() {
             post("/refreshToken") { authController.refreshToken(call) }
 
             authenticate {
+                post("/logout") { authController.logout(call) }
                 post("/sendOtp") { authController.sendVerificationOTP(call) }
                 post("/verifyOtp") { authController.verifyOTP(call) }
                 get("/hello") { authController.hello(call) }

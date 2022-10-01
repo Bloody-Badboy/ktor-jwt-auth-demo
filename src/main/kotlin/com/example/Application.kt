@@ -19,6 +19,7 @@ fun main() {
 
     transaction {
         addLogger(StdOutSqlLogger)
+        SchemaUtils.drop(User, KeyStore, VerificationOtp)
         SchemaUtils.createMissingTablesAndColumns(User, KeyStore, VerificationOtp)
     }
     embeddedServer(Netty, port = 9000) {

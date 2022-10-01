@@ -23,6 +23,16 @@ Content-Type: application/json
 %}
 
 ###
+POST {{base_url}}/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "refresh_token": "{{refresh_token}}"
+}
+
+
+###
 POST {{base_url}}/auth/refreshToken
 Content-Type: application/json
 Authorization: Bearer {{access_token}}

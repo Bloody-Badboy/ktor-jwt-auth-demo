@@ -15,6 +15,8 @@ interface KeyStoreRepository {
     fun createTokens(userEntity: UserEntity): TokenResponse
 
     fun createAccessToken(userEntity: UserEntity, refreshKey: String): String
+
+    fun deleteRefreshToken(userEntity: UserEntity, refreshKey: String)
 }
 
 class DefaultKeyStoreRepository : KeyStoreRepository {
@@ -50,5 +52,16 @@ class DefaultKeyStoreRepository : KeyStoreRepository {
             keyStoreEntity.accessKey = randAccessKey
         }
         return TokenUtils.generateAccessToken(key = randAccessKey, userEntity = userEntity)
+    }
+
+    override fun deleteRefreshToken(userEntity: UserEntity, refreshKey: String) {
+        transaction {
+            val keyStoreEntity = KeyStoreEntity.find {
+                KeyStore.user eq userEntity.id
+                KeyStore.refreshKey eq refreshKey
+            }.singleOrNull() ?: throw UnauthorizedException("Invalid refresh token.")
+
+            keyStoreEntity.delete()
+        }
     }
 }

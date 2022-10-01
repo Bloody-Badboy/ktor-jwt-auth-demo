@@ -67,12 +67,10 @@ class AuthController(private val userRepository: UserRepository, private val key
                 throw UnauthorizedException("Invalid refresh token.")
             }
 
-            val accessTokenEmail = decodedAccessToken.getClaim(Configs.JWT_CLAIM_USER_EMAIL).asString()
-            val refreshTokenEmail = decodedRefreshToken.getClaim(Configs.JWT_CLAIM_USER_EMAIL).asString()
             val accessKey = decodedAccessToken.getClaim(Configs.JWT_CLAIM_KEY).asString()
             val refreshKey = decodedRefreshToken.getClaim(Configs.JWT_CLAIM_KEY).asString()
 
-            if (accessTokenEmail == null || refreshTokenEmail == null || accessKey == null || refreshKey == null) {
+            if (accessKey == null || refreshKey == null) {
                 throw UnauthorizedException("Invalid token.")
             }
 
@@ -83,6 +81,27 @@ class AuthController(private val userRepository: UserRepository, private val key
 
             call.respond(AccessTokenResponse(accessToken = newAccessToken))
         }
+    }
+
+    suspend fun logout(call: ApplicationCall) {
+        val userEntity = checkNotNull(call.principal<JWTPrincipalExtended>()).user
+        val logoutRequest = call.receive<RefreshTokenRequest>()
+        val refreshToken = logoutRequest.refreshToken
+
+        val decodedRefreshToken: DecodedJWT
+
+        try {
+            decodedRefreshToken = TokenUtils.verifyRefreshToken(refreshToken)
+        } catch (_: Throwable) {
+            throw UnauthorizedException("Invalid refresh token.")
+        }
+
+        val refreshKey = decodedRefreshToken.getClaim(Configs.JWT_CLAIM_KEY).asString()
+            ?: throw UnauthorizedException("Invalid token.")
+
+        keyStoreRepository.deleteRefreshToken(userEntity = userEntity, refreshKey = refreshKey)
+
+        call.respond(MessageResponse(message = "Logged out successfully!"))
     }
 
     suspend fun hello(call: ApplicationCall) {
