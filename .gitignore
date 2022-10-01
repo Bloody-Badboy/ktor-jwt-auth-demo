@@ -1,0 +1,9 @@
+**/build
+.idea
+.gradle
+.iml
+.project
+.classpath
+*.iml
+/db
+local.properties
