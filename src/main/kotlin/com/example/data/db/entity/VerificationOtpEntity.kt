@@ -11,7 +11,7 @@ class VerificationOtpEntity(id: EntityID<Int>) : IntEntity(id) {
     var user by UserEntity referencedOn VerificationOtp.user
     var otp by VerificationOtp.otp
     var otpPurpose by VerificationOtp.otpPurpose
-    var sentCount by VerificationOtp.sentCount
+    var resendCount by VerificationOtp.resendCount
     var incorrectAttemptCount by VerificationOtp.incorrectAttemptCount
     var issuedAt by VerificationOtp.issuedAt
     var expireAt by VerificationOtp.expireAt

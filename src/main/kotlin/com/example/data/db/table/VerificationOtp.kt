@@ -17,7 +17,7 @@ object VerificationOtp : IntIdTable(name = "verification_otp") {
         }, toDb = { type ->
             type.name
         })
-    val sentCount = integer("sent_count")
+    val resendCount = integer("resend_count")
     val incorrectAttemptCount = integer("incorrect_attempt_count")
     val issuedAt = datetime("issued_at")
     val expireAt = datetime("expire_at")

@@ -53,6 +53,6 @@ object TokenUtils {
         .withClaim(Configs.JWT_CLAIM_USER_EMAIL, userEntity.email)
         .withClaim(Configs.JWT_CLAIM_KEY, key)
         .withIssuedAt(Date())
-        .withExpiresAt(Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(7)))
+        .withExpiresAt(Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(180)))
         .sign(REFRESH_TOKEN_ALGORITHM)
 }

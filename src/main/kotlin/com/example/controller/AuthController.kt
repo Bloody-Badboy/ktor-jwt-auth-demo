@@ -15,6 +15,7 @@ import com.example.model.UnauthorizedException
 import com.example.model.request.LoginRequest
 import com.example.model.request.RefreshTokenRequest
 import com.example.model.request.VerifyOtpRequest
+import com.example.model.response.AccessTokenResponse
 import com.example.model.response.LoginResponse
 import com.example.model.response.MessageResponse
 import com.example.model.response.UserResponse
@@ -78,7 +79,9 @@ class AuthController(private val userRepository: UserRepository, private val key
             val userEntity = userRepository.findUserByKey(accessKey = accessKey, refreshKey = refreshKey)
                 ?: throw UnauthorizedException("Invalid token.")
 
-            call.respond(keyStoreRepository.createTokens(userEntity))
+            val newAccessToken = keyStoreRepository.createAccessToken(userEntity = userEntity, refreshKey = refreshKey)
+
+            call.respond(AccessTokenResponse(accessToken = newAccessToken))
         }
     }
 
@@ -106,11 +109,27 @@ class AuthController(private val userRepository: UserRepository, private val key
             }.singleOrNull()
         }
 
-        if (otpEntity != null) {
-            var sentCount = otpEntity.sentCount
-            if (sentCount >= 5) {
-                // block if more than 5 otp requested with in 30min
-                if (LocalDateTime.now().isBefore(otpEntity.issuedAt.plusMinutes(30))) {
+        if (otpEntity == null) {
+            val code = CodeUtils.generateOtp()
+            transaction {
+                VerificationOtpEntity.new {
+                    user = userEntity
+                    otp = code
+                    otpPurpose = OtpPurpose.ACCOUNT_VERIFICATION
+                    resendCount = 0
+                    incorrectAttemptCount = 0
+                    issuedAt = LocalDateTime.now()
+                    expireAt = LocalDateTime.now().plusMinutes(Configs.OTP_EXPIRY_MIN)
+                }
+            }
+            //TODO: send otp via mailing function
+
+            call.respond(MessageResponse(message = "An otp has been sent to the ${userEntity.email}. [${code}]"))
+        } else {
+            var sentCount = otpEntity.resendCount
+            if (sentCount >= Configs.OTP_MAX_RESEND_COUNT) {
+                // block if more than X otp requested with in Y min
+                if (LocalDateTime.now().isBefore(otpEntity.issuedAt.plusMinutes(Configs.OTP_RATE_LIMIT_RESET_MIN))) {
                     throw RateLimitReachedException("OTP rate limit exceeded because of too many resend attempts, please try again later.")
                 } else {
                     sentCount = 0
@@ -124,29 +143,13 @@ class AuthController(private val userRepository: UserRepository, private val key
                     otpEntity.otp = CodeUtils.generateOtp()
                 }
 
-                otpEntity.sentCount = sentCount
+                otpEntity.resendCount = sentCount
                 otpEntity.issuedAt = LocalDateTime.now()
                 otpEntity.expireAt = LocalDateTime.now().plusMinutes(5)
             }
 
             //TODO: send otp via mailing function
-            call.respond(MessageResponse(message = "OTP sent successfully! [${otpEntity.otp}]"))
-        } else {
-            val code = CodeUtils.generateOtp()
-            transaction {
-                VerificationOtpEntity.new {
-                    user = userEntity
-                    otp = code
-                    otpPurpose = OtpPurpose.ACCOUNT_VERIFICATION
-                    sentCount = 0
-                    incorrectAttemptCount = 0
-                    issuedAt = LocalDateTime.now()
-                    expireAt = LocalDateTime.now().plusMinutes(2)
-                }
-            }
-            //TODO: send otp via mailing function
-
-            call.respond(MessageResponse(message = "An otp has been sent to the ${userEntity.email}. [${code}]"))
+            call.respond(MessageResponse(message = "An otp has been resent to the [${otpEntity.otp}]"))
         }
     }
 
@@ -164,7 +167,7 @@ class AuthController(private val userRepository: UserRepository, private val key
 
 
         if (otpEntity.otp != request.otp) {
-            if (otpEntity.incorrectAttemptCount >= 3) {
+            if (otpEntity.incorrectAttemptCount >= Configs.OTP_VERIFY_INCORRECT_ATTEMPT) {
                 throw ForbiddenException("OTP rate limit exceeded because of too many failed verify attempts, please try again later.")
             }
             transaction {

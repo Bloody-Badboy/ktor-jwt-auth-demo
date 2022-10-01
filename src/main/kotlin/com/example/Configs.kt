@@ -8,4 +8,9 @@ object Configs {
 
     const val JWT_CLAIM_USER_EMAIL = "email"
     const val JWT_CLAIM_KEY = "key"
+
+    const val OTP_MAX_RESEND_COUNT = 3
+    const val OTP_EXPIRY_MIN = 10L
+    const val OTP_RATE_LIMIT_RESET_MIN = 60L
+    const val OTP_VERIFY_INCORRECT_ATTEMPT = 3
 }
