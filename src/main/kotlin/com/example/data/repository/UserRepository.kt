@@ -2,8 +2,9 @@ package com.example.data.repository
 
 import com.example.data.db.entity.KeyStoreEntity
 import com.example.data.db.entity.UserEntity
-import com.example.data.db.table.KeyStores
-import com.example.data.db.table.Users
+import com.example.data.db.table.KeyStore
+import com.example.data.db.table.User
+import com.example.data.db.table.VerificationOtp
 import com.example.model.NotFoundException
 import com.example.model.request.UserRequest
 import org.jetbrains.exposed.sql.deleteWhere
@@ -38,35 +39,38 @@ class DefaultUserRepository : UserRepository {
     override fun findUserByEmail(email: String): UserEntity? {
         return transaction {
             UserEntity.find {
-                Users.email eq email
-            }.firstOrNull()
+                User.email eq email
+            }.singleOrNull()
         }
     }
 
     override fun findUserByKey(accessKey: String): UserEntity? {
         return transaction {
             KeyStoreEntity.find {
-                KeyStores.accessKey eq accessKey
-            }.firstOrNull()?.user
+                KeyStore.accessKey eq accessKey
+            }.singleOrNull()?.user
         }
     }
 
     override fun findUserByKey(accessKey: String, refreshKey: String): UserEntity? {
         return transaction {
             KeyStoreEntity.find {
-                KeyStores.accessKey eq accessKey
-                KeyStores.refreshKey eq refreshKey
-            }.firstOrNull()?.user
+                KeyStore.accessKey eq accessKey
+                KeyStore.refreshKey eq refreshKey
+            }.singleOrNull()?.user
         }
     }
 
     override fun deleteUser(email: String) {
         transaction {
             val entity = UserEntity.find {
-                Users.email eq email
-            }.firstOrNull() ?: throw NotFoundException("User with $email not found")
-            KeyStores.deleteWhere {
-                KeyStores.user eq entity.id
+                User.email eq email
+            }.singleOrNull() ?: throw NotFoundException("User with $email not found")
+            VerificationOtp.deleteWhere {
+                VerificationOtp.user eq entity.id
+            }
+            KeyStore.deleteWhere {
+                KeyStore.user eq entity.id
             }
             entity.delete()
         }

@@ -24,3 +24,11 @@ class ConflictException(msg: String? = null) : HttpException(msg) {
 class UnauthorizedException(msg: String? = null) : HttpException(msg) {
     override val statusCode = HttpStatusCode.Unauthorized
 }
+
+class ForbiddenException(msg: String? = null) : HttpException(msg) {
+    override val statusCode = HttpStatusCode.Forbidden
+}
+
+class RateLimitReachedException(msg: String? = null) : HttpException(msg) {
+    override val statusCode = HttpStatusCode.Forbidden
+}

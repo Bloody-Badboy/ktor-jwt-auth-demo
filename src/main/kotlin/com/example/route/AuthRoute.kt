@@ -15,11 +15,12 @@ fun Application.configureAuthRouting() {
 
     routing {
         route("/auth") {
-            post("/register") { authController.register(call) }
             post("/login") { authController.login(call) }
             post("/refreshToken") { authController.refreshToken(call) }
 
             authenticate {
+                post("/sendOtp") { authController.sendVerificationOTP(call) }
+                post("/verifyOtp") { authController.verifyOTP(call) }
                 get("/hello") { authController.hello(call) }
             }
         }

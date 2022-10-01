@@ -1,7 +1,8 @@
 package com.example
 
-import com.example.data.db.table.KeyStores
-import com.example.data.db.table.Users
+import com.example.data.db.table.KeyStore
+import com.example.data.db.table.User
+import com.example.data.db.table.VerificationOtp
 import com.example.di.configureKoin
 import com.example.route.configureAuthRouting
 import com.example.route.configureUserRoute
@@ -18,7 +19,7 @@ fun main() {
 
     transaction {
         addLogger(StdOutSqlLogger)
-        SchemaUtils.create(Users, KeyStores)
+        SchemaUtils.createMissingTablesAndColumns(User, KeyStore, VerificationOtp)
     }
     embeddedServer(Netty, port = 9000) {
         configureKoin()

@@ -1,4 +1,4 @@
-POST {{base_url}}/auth/register
+POST {{base_url}}/user/register
 Content-Type: application/json
 
 {
@@ -31,7 +31,7 @@ Authorization: Bearer {{access_token}}
   "refresh_token": "{{refresh_token}}"
 }
 
-###
+### Auth Hello
 
 GET {{base_url}}/auth/hello
 Authorization: Bearer {{access_token}}
@@ -43,3 +43,17 @@ Authorization: Bearer {{access_token}}
 ###
 DELETE {{base_url}}/user
 Authorization: Bearer {{access_token}}
+
+###
+
+POST {{base_url}}/auth/sendOtp
+Authorization: Bearer {{access_token}}
+
+###
+POST {{base_url}}/auth/verifyOtp
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "otp": "Q39MZK"
+}
