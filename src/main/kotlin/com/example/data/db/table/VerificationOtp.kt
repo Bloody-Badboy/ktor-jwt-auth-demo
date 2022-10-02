@@ -10,10 +10,10 @@ enum class OtpPurpose {
 object VerificationOtp : IntIdTable(name = "verification_otp") {
     val user = reference("user", User)
     val otp = varchar("otp", 256)
-    val otpPurpose = customEnumeration(name = "otp_purpose",
+    val otpPurpose = customEnumeration<OtpPurpose>(name = "otp_purpose",
         sql = "ENUM (" + OtpPurpose.values().joinToString { "'" + it.name + "'" } + ")",
         fromDb = {
-            enumValueOf<OtpPurpose>(it as String)
+            enumValueOf(it as String)
         }, toDb = { type ->
             type.name
         })

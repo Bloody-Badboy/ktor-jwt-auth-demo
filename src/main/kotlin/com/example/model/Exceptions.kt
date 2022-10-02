@@ -13,6 +13,10 @@ abstract class HttpException(msg: String?) : Exception(msg) {
     }
 }
 
+class BadRequestException(msg: String? = null) : HttpException(msg) {
+    override val statusCode = HttpStatusCode.BadRequest
+}
+
 class NotFoundException(msg: String? = null) : HttpException(msg) {
     override val statusCode = HttpStatusCode.NotFound
 }

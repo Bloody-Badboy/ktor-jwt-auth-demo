@@ -7,6 +7,7 @@ import com.example.data.db.table.OtpPurpose
 import com.example.data.db.table.VerificationOtp
 import com.example.data.repository.KeyStoreRepository
 import com.example.data.repository.UserRepository
+import com.example.model.BadRequestException
 import com.example.model.ForbiddenException
 import com.example.model.JWTPrincipalExtended
 import com.example.model.NotFoundException
@@ -27,6 +28,7 @@ import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -121,6 +123,10 @@ class AuthController(private val userRepository: UserRepository, private val key
     suspend fun sendVerificationOTP(call: ApplicationCall) {
         val userEntity = checkNotNull(call.principal<JWTPrincipalExtended>()).user
 
+        if (userEntity.verified) {
+            throw BadRequestException("Account already verified.")
+        }
+
         val otpEntity = transaction {
             VerificationOtpEntity.find {
                 VerificationOtp.user eq userEntity.id
@@ -129,11 +135,10 @@ class AuthController(private val userRepository: UserRepository, private val key
         }
 
         if (otpEntity == null) {
-            val code = CodeUtils.generateOtp()
-            transaction {
+            val entity = transaction {
                 VerificationOtpEntity.new {
                     user = userEntity
-                    otp = code
+                    otp = CodeUtils.generateOtp()
                     otpPurpose = OtpPurpose.ACCOUNT_VERIFICATION
                     resendCount = 0
                     incorrectAttemptCount = 0
@@ -143,38 +148,48 @@ class AuthController(private val userRepository: UserRepository, private val key
             }
             //TODO: send otp via mailing function
 
-            call.respond(MessageResponse(message = "An otp has been sent to the ${userEntity.email}. [${code}]"))
+            call.respond(MessageResponse(message = "An otp has been sent to the ${userEntity.email}. [${entity.otp} ${entity.expireAt}]"))
         } else {
-            var sentCount = otpEntity.resendCount
-            if (sentCount >= Configs.OTP_MAX_RESEND_COUNT) {
+            var resendCount = otpEntity.resendCount
+            if (resendCount >= Configs.OTP_MAX_RESEND_COUNT) {
                 // block if more than X otp requested with in Y min
                 if (LocalDateTime.now().isBefore(otpEntity.issuedAt.plusMinutes(Configs.OTP_RATE_LIMIT_RESET_MIN))) {
                     throw RateLimitReachedException("OTP rate limit exceeded because of too many resend attempts, please try again later.")
                 } else {
-                    sentCount = 0
+                    resendCount = 0
                 }
             }
-            sentCount++
+            resendCount++
             transaction {
+
+                otpEntity.resendCount = resendCount
+
                 val isExpired = LocalDateTime.now().isAfter(otpEntity.expireAt)
                 if (isExpired) {
                     otpEntity.incorrectAttemptCount = 0
                     otpEntity.otp = CodeUtils.generateOtp()
+                    otpEntity.issuedAt = LocalDateTime.now()
+                    otpEntity.expireAt = LocalDateTime.now().plusMinutes(Configs.OTP_EXPIRY_MIN)
+                } else {
+                    val resendDiff = Duration.between(otpEntity.issuedAt, LocalDateTime.now())
+                    // extend expiry by (now() - issuedAt) seconds
+                    otpEntity.expireAt = otpEntity.expireAt.plusSeconds(resendDiff.seconds)
                 }
 
-                otpEntity.resendCount = sentCount
-                otpEntity.issuedAt = LocalDateTime.now()
-                otpEntity.expireAt = LocalDateTime.now().plusMinutes(5)
             }
 
             //TODO: send otp via mailing function
-            call.respond(MessageResponse(message = "An otp has been resent to the [${otpEntity.otp}]"))
+            call.respond(MessageResponse(message = "An otp has been resent to the [${otpEntity.otp} ${otpEntity.expireAt}]"))
         }
     }
 
     suspend fun verifyOTP(call: ApplicationCall) {
         val userEntity = checkNotNull(call.principal<JWTPrincipalExtended>()).user
         val request = call.receive<VerifyOtpRequest>()
+
+        if (userEntity.verified) {
+            throw BadRequestException("Account already verified.")
+        }
 
         val otpEntity = transaction {
             VerificationOtpEntity.find {
