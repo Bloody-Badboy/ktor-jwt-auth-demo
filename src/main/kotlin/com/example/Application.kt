@@ -22,7 +22,7 @@ fun main() {
         SchemaUtils.drop(User, KeyStore, VerificationOtp)
         SchemaUtils.createMissingTablesAndColumns(User, KeyStore, VerificationOtp)
     }
-    embeddedServer(Netty, port = 9000) {
+    embeddedServer(Netty, port = 8080) {
         configureKoin()
         installFeatures()
         configureAuthRouting()

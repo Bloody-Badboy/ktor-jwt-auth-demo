@@ -8,7 +8,7 @@ Content-Type: application/json
   "password": "secret"
 }
 
-###
+### Login
 
 POST {{base_url}}/auth/login
 Content-Type: application/json
@@ -22,7 +22,7 @@ Content-Type: application/json
     client.global.set("refresh_token", response.body.tokens.refresh_token);
 %}
 
-###
+### Logout
 POST {{base_url}}/auth/logout
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
@@ -32,7 +32,7 @@ Authorization: Bearer {{access_token}}
 }
 
 
-###
+### Refresh Access Token
 POST {{base_url}}/auth/refreshToken
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
@@ -46,24 +46,24 @@ Authorization: Bearer {{access_token}}
 GET {{base_url}}/auth/hello
 Authorization: Bearer {{access_token}}
 
-###
+### Get User Profile
 GET {{base_url}}/user
 Authorization: Bearer {{access_token}}
 
-###
+### Delete User Account
 DELETE {{base_url}}/user
 Authorization: Bearer {{access_token}}
 
-###
+### Send Account Verification OTP
 
 POST {{base_url}}/auth/sendOtp
 Authorization: Bearer {{access_token}}
 
-###
+### Verify Account Verification OTP
 POST {{base_url}}/auth/verifyOtp
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
 {
-  "otp": "Q39MZK"
+  "otp": ""
 }
